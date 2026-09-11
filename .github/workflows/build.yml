@@ -1,0 +1,47 @@
+name: Build Bruce - Cardputer ADV M5Stack Cap CC1101
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout custom repository
+        uses: actions/checkout@v4
+
+      - name: Checkout upstream Bruce
+        uses: actions/checkout@v4
+        with:
+          repository: BruceDevices/firmware
+          path: bruce
+          fetch-depth: 1
+
+      - name: Apply Cardputer ADV + M5Stack Cap CC1101 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 patch_bruce.py bruce
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Build Cardputer ADV
+        working-directory: bruce
+        run: pio run -e m5stack-cardputer
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: bruce-cardputer-adv-m5stack-cap-cc1101
+          path: |
+            bruce/.pio/build/m5stack-cardputer/*.bin
+            bruce/.pio/build/m5stack-cardputer/*.elf
+          if-no-files-found: error
